@@ -7,6 +7,8 @@ from src.api.routes.authentication import authentication_router
 from src.exceptions import InvalidCredentials
 
 app = FastAPI()
+
+
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],

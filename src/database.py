@@ -35,4 +35,5 @@ class DBManager:
 
     def release_connection(self, conn: connection) -> None:
         if self.pool is not None:
+            conn.commit()
             self.pool.putconn(conn)
