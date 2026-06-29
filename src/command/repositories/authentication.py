@@ -20,9 +20,9 @@ class AuthenticationRepository:
         with self.db_manager.get_connection() as conn:
             with conn.cursor() as cur:
                 query = """
-                INSERT INTO users (username, password, email, role, created_at, updated_at, email_verified, account_verified, verified_by, created_by, updated_by)
+                INSERT INTO users (username, password, email, role, created_at, updated_at, email_verified, created_by, updated_by, deleted_by, deleted_at)
                 VALUES ( %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
-                RETURNING user_id, username, email, role, email_verified, account_verified;
+                RETURNING user_id, username, email, role, email_verified;
                 """
                 cur.execute(
                     query,
@@ -34,12 +34,13 @@ class AuthenticationRepository:
                         user.created_at,
                         user.updated_at,
                         user.email_verified,
-                        user.account_verified,
-                        user.verified_by,
                         user.created_by,
                         user.updated_by,
+                        user.deleted_by,
+                        user.deleted_at,
                     ),
                 )
+
                 user_data = cur.fetchone()
 
             self.db_manager.release_connection(conn)
@@ -66,6 +67,8 @@ class AuthenticationRepository:
                 """
                 cur.execute(query, (email,))
                 user_data = cur.fetchone()
+                print(user_data)
+
             self.db_manager.release_connection(conn)
 
         return CreateUser.model_validate(user_data) if user_data else None
@@ -73,12 +76,12 @@ class AuthenticationRepository:
     def get_user_context(self, cmd: GetUserContext) -> UserContext | None:
         if cmd.user_id is None:
             query = """
-            SELECT user_id, username, email, role, email_verified, account_verified FROM users WHERE email = %s;
+            SELECT user_id, username, email, role, email_verified FROM users WHERE email = %s;
             """
             value = (str(cmd.email),)
         else:
             query = """
-            SELECT user_id, username, email, role, email_verified, account_verified FROM users WHERE user_id = %s;
+            SELECT user_id, username, email, role, email_verified FROM users WHERE user_id = %s;
             """
             value = (str(cmd.user_id),)
 
@@ -133,7 +136,7 @@ class AuthenticationRepository:
                     UPDATE users
                     SET email_verified = %s
                     WHERE email = %s
-                    RETURNING user_id, username, email, role, email_verified, account_verified
+                    RETURNING user_id, username, email, role, email_verified
                 """
                 values = (cmd.email_verified, cmd.email)
                 cur.execute(sql, values)
@@ -158,10 +161,7 @@ if __name__ == "__main__":
     # )
 
     # print(auth_repo.get_user_by_email("arulsampathcyr@gmail.com"))
-    # print(auth_repo.get_user_by_id(UUID("6ab2b483-acd6-4d88-b4f6-0c2d383d3dd4")))
-    # print(
-    #     auth_repo.get_user_context(
-    #         GetUserContext(user_id=UUID("6ab2b483-acd6-4d88-b4f6-0c2d383d3dd4"))
-    #     )
-    # )
+    # print(auth_repo.get_user_by_id(UUID("f483570e-ffc2-4306-b8aa-204d4784ebd9")))
+    # print(auth_repo.get_user_context(GetUserContext(email="arulsampathcyr@gmail.com")))
+
     #

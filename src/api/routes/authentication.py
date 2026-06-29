@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Request, Response
+from fastapi import APIRouter, HTTPException, Request, Response
 
 from src.api.dependencies import AuthenticationDependency
 from src.api.shemas.authentication import CreateUser, FromProvider, LoginSuccess
@@ -120,3 +120,11 @@ async def microsoft_callback(
         secure=False,
     )
     return LoginSuccess(message="Login successful")
+
+
+@authentication_router.get("/me")
+async def user_context(request: Request, auth_service: AuthenticationDependency):
+    token = request.cookies.get("access_token")
+    if not token:
+        raise HTTPException(status_code=401, detail="Not authenticated")
+    return auth_service.get_user_by_token(token)

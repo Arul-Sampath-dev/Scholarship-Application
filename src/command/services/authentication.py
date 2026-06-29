@@ -1,4 +1,3 @@
-import random
 from typing import cast
 from uuid import UUID
 
@@ -6,10 +5,12 @@ from src.api.shemas.authentication import FromProvider
 from src.command.commands.authentication import (
     CreateUser,
     CreateUserWithConfirm,
+    GetUserContext,
     LoginUser,
     ProviderCreate,
     Role,
     Token,
+    UserContext,
     UserHasProvider,
     UserPayload,
 )
@@ -37,7 +38,8 @@ class AuthenticationService:
     def register_user(self, cmd: CreateUserWithConfirm) -> Token:
         if cmd.password != cmd.confirm_password:
             raise InvalidPasswordAndConfirmation()
-        user = self.auth_repo.get_user_by_email(cmd.email)
+        user = self.auth_repo.get_user_context(GetUserContext(email=cmd.email))
+        # user = self.auth_repo.get_user_by_email(cmd.email)
 
         if user:
             raise UserAlreadyExists()
@@ -49,7 +51,6 @@ class AuthenticationService:
                 password=self.password_handler.hash_password(cmd.password),
                 role=Role.STUDENT,
                 email_verified=False,
-                account_verified=False,
             )
         )
 
@@ -61,12 +62,13 @@ class AuthenticationService:
                 role=user.role,
                 type="access",
                 email_verified=user.email_verified,
-                account_verified=user.account_verified,
             )
         )
         return Token(access_token=token)
 
     def login(self, cmd: LoginUser) -> Token:
+        # user = self.auth_repo.get_user_context(GetUserContext(email=cmd.email))
+        # Here i need to check the password for that im fetch all the user data using get_user_by_email
         user = self.auth_repo.get_user_by_email(cmd.email)
 
         if not user or not self.password_handler.verify_password(
@@ -84,15 +86,15 @@ class AuthenticationService:
                 role=user.role,
                 type="access",
                 email_verified=user.email_verified,
-                account_verified=user.account_verified,
             )
         )
 
         return Token(access_token=token)
 
     def login_via_oauth(self, cmd: FromProvider) -> Token:
-        existing_user = self.auth_repo.get_user_by_email(cmd.email)
-
+        # existing_user = self.auth_repo.get_user_by_email(cmd.email)
+        existing_user = self.auth_repo.get_user_context(GetUserContext(email=cmd.email))
+        # todo: in here i done the account validation using GetUserContext i need to change it. I need to check the account hasn't been deleted
         if existing_user:
             # i need to check if the user has a provider
             if (
@@ -119,7 +121,6 @@ class AuthenticationService:
                     role=existing_user.role,
                     type="access",
                     email_verified=existing_user.email_verified,
-                    account_verified=existing_user.account_verified,
                 )
             )
             return Token(
@@ -150,12 +151,21 @@ class AuthenticationService:
                 role=user_context.role,
                 type="access",
                 email_verified=user_context.email_verified,
-                account_verified=user_context.account_verified,
             )
         )
 
         return Token(
             access_token=token,
+        )
+
+    def get_user_by_token(self, token: str) -> UserContext:
+        payload = self.jwt_handler.decode_jwt(token)
+        return UserContext(
+            user_id=cast(UUID, payload.user_id),
+            username=payload.username,
+            email=payload.email,
+            role=payload.role,
+            email_verified=payload.email_verified,
         )
 
 

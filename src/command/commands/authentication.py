@@ -1,6 +1,5 @@
 from datetime import datetime
 from enum import Enum
-from optparse import Option
 from typing import Optional
 from uuid import UUID
 
@@ -27,14 +26,13 @@ class LoginUser(BaseModel):
 
 class CreateUser(RegisterUser):
     user_id: Optional[UUID] = None
-    is_active: bool = True
     email_verified: bool = False
-    account_verified: bool = False
-    verified_by: Optional[UUID] = None
-    updated_at: datetime = Field(default_factory=datetime.now)
+    updated_at: Optional[datetime] = None
     created_at: datetime = Field(default_factory=datetime.now)
     created_by: Optional[UUID] = None
     updated_by: Optional[UUID] = None
+    deleted_by: Optional[UUID] = None
+    deleted_at: Optional[datetime] = None
 
 
 class UserId(BaseModel):
@@ -54,7 +52,6 @@ class UserContext(BaseModel):
     email: EmailStr
     role: Role
     email_verified: bool
-    account_verified: bool
 
 
 class GetUserContext(BaseModel):
