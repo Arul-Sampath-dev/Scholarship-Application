@@ -7,14 +7,14 @@ from src.command.commands.authentication import (
     CreateUserWithConfirm,
     GetUserContext,
     LoginUser,
-    ProviderCreate,
     Role,
     Token,
     UserContext,
-    UserHasProvider,
     UserPayload,
 )
+from src.command.commands.provider import ProviderCreate, UserHasProvider
 from src.command.repositories.authentication import AuthenticationRepository
+from src.command.repositories.provider import ProviderRepository
 from src.core.authentication import JWTHandler, PasswordHandler
 from src.database import DBManager
 from src.exceptions import (
@@ -30,21 +30,23 @@ class AuthenticationService:
         auth_repo: AuthenticationRepository,
         password_handler: PasswordHandler,
         jwt_handler: JWTHandler,
+        provider_repo: ProviderRepository,
     ):
         self.auth_repo = auth_repo
         self.password_handler = password_handler
         self.jwt_handler = jwt_handler
+        self.provider_repo = provider_repo
 
-    def register_user(self, cmd: CreateUserWithConfirm) -> Token:
+    def register(self, cmd: CreateUserWithConfirm) -> Token:
         if cmd.password != cmd.confirm_password:
             raise InvalidPasswordAndConfirmationError()
-        user = self.auth_repo.get_user_context(GetUserContext(email=cmd.email))
+        user = self.auth_repo.get_context(GetUserContext(email=cmd.email))
         # user = self.auth_repo.get_user_by_email(cmd.email)
 
         if user:
             raise UserAlreadyExistsError()
 
-        user = self.auth_repo.create_user(
+        user = self.auth_repo.create(
             CreateUser(
                 username=cmd.username,
                 email=cmd.email,
@@ -69,7 +71,7 @@ class AuthenticationService:
     def login(self, cmd: LoginUser) -> Token:
         # user = self.auth_repo.get_user_context(GetUserContext(email=cmd.email))
         # Here i need to check the password for that im fetch all the user data using get_user_by_email
-        user = self.auth_repo.get_user_by_email(cmd.email)
+        user = self.auth_repo.get_by_email(cmd.email)
 
         if not user or not self.password_handler.verify_password(
             cmd.password, cast(str, user.password)
@@ -93,12 +95,12 @@ class AuthenticationService:
 
     def login_via_oauth(self, cmd: FromProvider) -> Token:
         # existing_user = self.auth_repo.get_user_by_email(cmd.email)
-        existing_user = self.auth_repo.get_user_context(GetUserContext(email=cmd.email))
+        existing_user = self.auth_repo.get_context(GetUserContext(email=cmd.email))
         # todo: in here i done the account validation using GetUserContext i need to change it. I need to check the account hasn't been deleted
         if existing_user:
             # i need to check if the user has a provider
             if (
-                self.auth_repo.get_provider(
+                self.provider_repo.get(
                     UserHasProvider(
                         user_id=cast(UUID, existing_user.user_id),
                         provider_name=cmd.provider,
@@ -106,7 +108,7 @@ class AuthenticationService:
                 )
                 is None
             ):
-                self.auth_repo.create_provider(
+                self.provider_repo.create(
                     ProviderCreate(
                         user_id=cast(UUID, existing_user.user_id),
                         provider_name=cmd.provider,
@@ -127,7 +129,7 @@ class AuthenticationService:
                 access_token=token,
             )
 
-        user_context = self.auth_repo.create_user(
+        user_context = self.auth_repo.create(
             CreateUser(
                 username=cmd.username,
                 email=cmd.email,
@@ -136,7 +138,7 @@ class AuthenticationService:
             )
         )
 
-        self.auth_repo.create_provider(
+        self.provider_repo.create(
             ProviderCreate(
                 user_id=cast(UUID, user_context.user_id),
                 provider_name=cmd.provider,
@@ -174,7 +176,10 @@ if __name__ == "__main__":
     auth_repo = AuthenticationRepository(db)
     password_handler = PasswordHandler()
     jwt_handler = JWTHandler()
-    auth_service = AuthenticationService(auth_repo, password_handler, jwt_handler)
+    provider_repo = ProviderRepository(db)
+    auth_service = AuthenticationService(
+        auth_repo, password_handler, jwt_handler, provider_repo
+    )
 
     # auth_service.register_user(
     #     CreateUserWithConfirm(

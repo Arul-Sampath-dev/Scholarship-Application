@@ -4,10 +4,7 @@ from src.command.commands.authentication import (
     CreateUser,
     EmailVerify,
     GetUserContext,
-    ProviderCreate,
-    ProviderGet,
     UserContext,
-    UserHasProvider,
 )
 from src.database import DBManager
 
@@ -16,7 +13,7 @@ class AuthenticationRepository:
     def __init__(self, db_manager: DBManager):
         self.db_manager = db_manager
 
-    def create_user(self, user: CreateUser) -> UserContext:
+    def create(self, user: CreateUser) -> UserContext:
         with self.db_manager.get_connection() as conn:
             with conn.cursor() as cur:
                 query = """
@@ -47,7 +44,7 @@ class AuthenticationRepository:
 
         return UserContext.model_validate(user_data)
 
-    def get_user_by_id(self, user_id: UUID) -> CreateUser | None:
+    def get_by_id(self, user_id: UUID) -> CreateUser | None:
         with self.db_manager.get_connection() as conn:
             with conn.cursor() as cur:
                 query = """
@@ -59,7 +56,7 @@ class AuthenticationRepository:
 
         return CreateUser.model_validate(user_data) if user_data else None
 
-    def get_user_by_email(self, email: str) -> CreateUser | None:
+    def get_by_email(self, email: str) -> CreateUser | None:
         with self.db_manager.get_connection() as conn:
             with conn.cursor() as cur:
                 query = """
@@ -73,7 +70,7 @@ class AuthenticationRepository:
 
         return CreateUser.model_validate(user_data) if user_data else None
 
-    def get_user_context(self, cmd: GetUserContext) -> UserContext | None:
+    def get_context(self, cmd: GetUserContext) -> UserContext | None:
         if cmd.user_id is None:
             query = """
             SELECT user_id, username, email, role, email_verified FROM users WHERE email = %s;
@@ -93,43 +90,8 @@ class AuthenticationRepository:
 
         return UserContext.model_validate(user_data) if user_data else None
 
-    def create_provider(self, provider: ProviderCreate) -> ProviderGet | None:
-        with self.db_manager.get_connection() as conn:
-            with conn.cursor() as cur:
-                query = """
-                INSERT INTO providers (user_id, provider_name, created_at)
-                VALUES (%s, %s, %s) RETURNING *;
-                """
-                cur.execute(
-                    query,
-                    (
-                        str(provider.user_id),
-                        provider.provider_name.value,
-                        provider.created_at,
-                    ),
-                )
-
-                provider_data = cur.fetchone()
-            self.db_manager.release_connection(conn)
-
-        return ProviderGet.model_validate(provider_data) if provider_data else None
-
-    def get_provider(self, cmd: UserHasProvider) -> ProviderGet | None:
-        with self.db_manager.get_connection() as conn:
-            with conn.cursor() as cur:
-                sql = """
-                SELECT * FROM providers
-                WHERE user_id = %s AND provider_name = %s
-                """
-                values = (str(cmd.user_id), cmd.provider_name.value)
-
-                cur.execute(sql, values)
-                count = cur.fetchone()
-            self.db_manager.release_connection(conn)
-        return ProviderGet.model_validate(count) if count else None
-
     # Verify email
-    def verify_email(self, cmd: EmailVerify) -> UserContext | None:
+    def update_email_verify(self, cmd: EmailVerify) -> UserContext | None:
         with self.db_manager.get_connection() as conn:
             with conn.cursor() as cur:
                 sql = """

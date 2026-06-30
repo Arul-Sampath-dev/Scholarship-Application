@@ -1,13 +1,14 @@
-from fastapi import APIRouter, HTTPException, Request, Response
+from fastapi import APIRouter, Request, Response
 
 from src.api.dependencies import AuthenticationDependency
 from src.api.shemas.authentication import CreateUser, FromProvider, LoginSuccess
 from src.command.commands.authentication import (
     CreateUserWithConfirm,
     LoginUser,
-    Provider,
 )
+from src.command.commands.provider import Provider
 from src.core.oauth2 import oauth
+from src.exceptions import MissingTokenError
 
 authentication_router = APIRouter(
     tags=["authentication"],
@@ -20,7 +21,7 @@ def create_user(
     cmd: CreateUser, auth_service: AuthenticationDependency, response: Response
 ):
 
-    token = auth_service.register_user(CreateUserWithConfirm(**cmd.model_dump()))
+    token = auth_service.register(CreateUserWithConfirm(**cmd.model_dump()))
     response.set_cookie(
         key="access_token",
         value=token.access_token,
@@ -115,5 +116,5 @@ async def microsoft_callback(
 async def user_context(request: Request, auth_service: AuthenticationDependency):
     token = request.cookies.get("access_token")
     if not token:
-        raise HTTPException(status_code=401, detail="Not authenticated")
+        raise MissingTokenError()
     return auth_service.get_user_by_token(token)

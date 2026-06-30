@@ -1,10 +1,11 @@
 from datetime import datetime, timedelta
 from uuid import UUID
 
-from jose import jwt
+from jose import JWTError, jwt
 from passlib.hash import argon2  # type: ignore
 
-from src.command.commands.authentication import Role, UserContext, UserPayload
+from src.command.commands.authentication import Role, UserPayload
+from src.exceptions import InvalidTokenError
 from src.settings import settings
 
 
@@ -27,11 +28,14 @@ class JWTHandler:
         )
 
     def decode_jwt(self, token: str) -> UserPayload:
-        return UserPayload(
-            **jwt.decode(
-                token, key=settings.jwt.secret, algorithms=[settings.jwt.algorithm]
+        try:
+            return UserPayload(
+                **jwt.decode(
+                    token, key=settings.jwt.secret, algorithms=[settings.jwt.algorithm]
+                )
             )
-        )
+        except JWTError:
+            raise InvalidTokenError()
 
 
 if __name__ == "__main__":
@@ -49,7 +53,6 @@ if __name__ == "__main__":
             role=Role.STUDENT,
             type="access_token",
             email_verified=False,
-            account_verified=False,
         )
     )
 

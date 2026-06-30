@@ -1,6 +1,6 @@
 from pydantic import BaseModel, EmailStr
 
-from src.command.commands.authentication import Provider
+from src.command.commands.provider import Provider
 
 
 class LoginUser(BaseModel):
