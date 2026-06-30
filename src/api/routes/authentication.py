@@ -8,11 +8,6 @@ from src.command.commands.authentication import (
     Provider,
 )
 from src.core.oauth2 import oauth
-from src.exceptions import (
-    InvalidCredentials,
-    InvalidPasswordAndConfirmation,
-    UserAlreadyExists,
-)
 
 authentication_router = APIRouter(
     tags=["authentication"],
@@ -24,23 +19,17 @@ authentication_router = APIRouter(
 def create_user(
     cmd: CreateUser, auth_service: AuthenticationDependency, response: Response
 ):
-    try:
-        token = auth_service.register_user(CreateUserWithConfirm(**cmd.model_dump()))
-        response.set_cookie(
-            key="access_token",
-            value=token.access_token,
-            httponly=True,
-            samesite="lax",
-            max_age=60 * 60 * 24,
-            secure=False,
-        )
-        return LoginSuccess(message="User registered successfully")
-    except InvalidCredentials as e:
-        return LoginSuccess(message=str(e))
-    except InvalidPasswordAndConfirmation as e:
-        return LoginSuccess(message=str(e))
-    except UserAlreadyExists as e:
-        return LoginSuccess(message=str(e))
+
+    token = auth_service.register_user(CreateUserWithConfirm(**cmd.model_dump()))
+    response.set_cookie(
+        key="access_token",
+        value=token.access_token,
+        httponly=True,
+        samesite="lax",
+        max_age=60 * 60 * 24,
+        secure=False,
+    )
+    return LoginSuccess(message="User registered successfully")
 
 
 @authentication_router.post("/login")

@@ -18,9 +18,9 @@ from src.command.repositories.authentication import AuthenticationRepository
 from src.core.authentication import JWTHandler, PasswordHandler
 from src.database import DBManager
 from src.exceptions import (
-    InvalidCredentials,
-    InvalidPasswordAndConfirmation,
-    UserAlreadyExists,
+    InvalidCredentialsError,
+    InvalidPasswordAndConfirmationError,
+    UserAlreadyExistsError,
 )
 
 
@@ -37,12 +37,12 @@ class AuthenticationService:
 
     def register_user(self, cmd: CreateUserWithConfirm) -> Token:
         if cmd.password != cmd.confirm_password:
-            raise InvalidPasswordAndConfirmation()
+            raise InvalidPasswordAndConfirmationError()
         user = self.auth_repo.get_user_context(GetUserContext(email=cmd.email))
         # user = self.auth_repo.get_user_by_email(cmd.email)
 
         if user:
-            raise UserAlreadyExists()
+            raise UserAlreadyExistsError()
 
         user = self.auth_repo.create_user(
             CreateUser(
@@ -74,7 +74,7 @@ class AuthenticationService:
         if not user or not self.password_handler.verify_password(
             cmd.password, cast(str, user.password)
         ):
-            raise InvalidCredentials()
+            raise InvalidCredentialsError()
 
         # need to convert into token and send to api layer
 

@@ -1,3 +1,12 @@
+"""
+Why this setting.py ?
+- Help manage environment variables and settings for the application.
+Here we store the env variable by grouping them into classes.
+It uses pydantic and pydantic-settings to validate and load settings from environment variables.
+It layer only responsible for env values.
+- Helps to maintain all environment variables in one place.
+"""
+
 from typing import Annotated
 
 from pydantic import BaseModel, Field

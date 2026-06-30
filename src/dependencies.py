@@ -1,3 +1,9 @@
+"""
+This module provides dependency injection for the application.
+In here i creates a singleton objects for ther services.
+- Services needed repository, db singletons.
+"""
+
 from src.command.repositories.authentication import AuthenticationRepository
 from src.command.services.authentication import AuthenticationService
 from src.core.authentication import JWTHandler, PasswordHandler

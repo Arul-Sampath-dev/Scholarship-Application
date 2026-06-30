@@ -1,3 +1,9 @@
+"""
+This module provides the database connection pool for the application.
+In here we uses simple connection pool from psycopg2.
+Psycopg2 is a synchronous PostgreSQL database adapter for Python.
+"""
+
 from typing import Optional
 
 from psycopg2.extensions import connection
