@@ -59,9 +59,7 @@ async def login_via_google(request: Request):
 
 
 @authentication_router.get("/google/callback")
-async def google_callback(
-    request: Request, response: Response, auth_service: AuthenticationDependency
-):
+async def google_callback(request: Request, auth_service: AuthenticationDependency):
     token = await oauth.google.authorize_access_token(request)
     user = token["userinfo"]
 
@@ -70,16 +68,19 @@ async def google_callback(
             username=user["name"], email=user["email"], provider=Provider.GOOGLE
         )
     )
-    response = RedirectResponse(url="http://localhost:5173/dashboard", status_code=302)
-    response.set_cookie(
+
+    redirect = RedirectResponse(url="http://localhost:5173/dashboard", status_code=302)
+
+    redirect.set_cookie(
         key="access_token",
         value=token.access_token,
         httponly=True,
-        samesite="none",
+        samesite="lax",
         max_age=60 * 60 * 24,
-        secure=True,
+        secure=False,
     )
-    return response
+
+    return redirect
 
 
 @authentication_router.get("/login/microsoft")
