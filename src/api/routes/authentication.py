@@ -73,7 +73,7 @@ async def google_callback(request: Request, auth_service: AuthenticationDependen
         key="access_token",
         value=token.access_token,
         httponly=True,
-        samesite="none",
+        samesite="lax",
         max_age=60 * 60 * 24,
         secure=False,
     )
