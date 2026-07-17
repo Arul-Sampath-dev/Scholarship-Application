@@ -75,7 +75,7 @@ async def google_callback(request: Request, auth_service: AuthenticationDependen
         httponly=True,
         samesite="none",
         max_age=60 * 60 * 24,
-        secure=True,
+        secure=False,
     )
     return response
 
