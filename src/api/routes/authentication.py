@@ -79,6 +79,7 @@ async def google_callback(request: Request, auth_service: AuthenticationDependen
         max_age=60 * 60 * 24,
         secure=False,
     )
+    print(redirect.headers.get("set-cookie"))
 
     return redirect
 
