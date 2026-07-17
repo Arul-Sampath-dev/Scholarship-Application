@@ -1,4 +1,5 @@
 from fastapi import APIRouter, Request, Response
+from fastapi.responses import RedirectResponse
 
 from src.api.dependencies import AuthenticationDependency
 from src.api.shemas.authentication import CreateUser, FromProvider, LoginSuccess
@@ -69,6 +70,7 @@ async def google_callback(
             username=user["name"], email=user["email"], provider=Provider.GOOGLE
         )
     )
+    response = RedirectResponse(url="http://localhost:5173/dashboard", status_code=302)
     response.set_cookie(
         key="access_token",
         value=token.access_token,
@@ -77,7 +79,7 @@ async def google_callback(
         max_age=60 * 60 * 24,
         secure=False,
     )
-    return LoginSuccess(message="Login successful")
+    return response
 
 
 @authentication_router.get("/login/microsoft")
